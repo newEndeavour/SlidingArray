@@ -36,14 +36,17 @@ SlidingArray::SlidingArray(int _size)
 	//Set initial values	
 	size			= _size;		//
 	arg		        = (float*) malloc(_size * sizeof(float));
-	///*
+
+	//DEBUG - Pardon the mess as we are tidying this place ...
+	/*
 	Serial.print("\nsize:");
 	Serial.print(_size);
 	Serial.print("\nsizeof(float):");
 	Serial.print(sizeof(float));
 	Serial.print("\nmem:");
 	Serial.print(_size * sizeof(float));
-	//*/
+	*/
+
   	if (arg == NULL) size = 0;
   	
 	ClearArray();					// clear the Args
