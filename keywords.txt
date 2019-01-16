@@ -1,0 +1,6 @@
+SlidingArray	KEYWORD1
+Size		KEYWORD2
+Average		KEYWORD3
+StdDeviation	KEYWORD4
+Statistics	KEYWORD5
+MovingAverage   KEYWORD6
