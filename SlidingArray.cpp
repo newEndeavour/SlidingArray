@@ -1,7 +1,14 @@
 /*
-  SlidingArray.h v.01 - Library for 'duino
+  File:         SlidingArray.cpp
+  Version:      0.0.2
+  Date:         05-Jan-2019
+  Revision:     20-Jan-2019
+  Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
+
+  Editions:	Please go to SlidingArray.h for Edition Notes.
+
+  SlidingArray.h - Library for 'duino
   https://github.com/newEndeavour/SlidingArray
-  http://playground.arduino.cc/Main/SlidingArray
 
   Copyright (c) 2018 Jerome Drouin  All rights reserved.
  
@@ -89,13 +96,15 @@ void SlidingArray::ClearArray(void)
 	count 	= 0;
 	cmin	= NAN;
 	cmax	= NAN;
+	imin	= NAN;
+	imax	= NAN;
 }
 
 
-//
+//*******************************************************************************
 //		UNFINISHED
 //
-//
+//*******************************************************************************
 //Sorts Array, in an Ascending order = [1,2,3,4, ... ,Count] (Operation = 0) 
 // or a Descending order = [Count, ... ,4,3,2,1] (Operation = 1)
 void  SlidingArray::SortArray(int operation)
@@ -105,10 +114,10 @@ void  SlidingArray::SortArray(int operation)
 }
 
 
-//
+//*******************************************************************************
 //		UNFINISHED
 //
-//
+//*******************************************************************************
 //Trim Array with low_pos args, and high_pos args leaving only middle section
 void  SlidingArray::TrimArray(int low_pos, int high_pos)
 {
@@ -156,8 +165,23 @@ void SlidingArray::PopulateArray(float lastObservation)
 	arg[count-1] = lastObservation;			// Last observation takes the last place in the array
 	sum         += lastObservation;			// 	
 	average      = sum/count;			// finalise average
-	cmin 	     = min(lastObservation,cmin);	// update min	
-	cmax 	     = max(lastObservation,cmax);	// update max	
+	
+	if (count>1) {					// Not the first observation
+		if (lastObservation<cmin) {		// update cmin and imin
+			imin = count-1;		
+			cmin = lastObservation;
+		}
+	
+		if (lastObservation>cmax) {		// update cmax and imax	
+			imax = count-1;			
+			cmax = lastObservation;
+		}
+	} else { 					// first observation
+			imin = count-1;		
+			cmin = lastObservation;
+			imax = count-1;			
+			cmax = lastObservation;
+	}
 
 	/*
 	//DEBUG - Pardon the mess as we are tidying this place ...
@@ -297,7 +321,8 @@ float SlidingArray::GetMin(void)
 float lmin  = MAX_FLOAT_VALUE;
 
 	for (int i=0; i<count; i++) {
-		lmin  = min (lmin , arg[i]);		
+		lmin  = min (lmin , arg[i]);
+		if (arg[i]<lmin) imin = i;		
 	}
 	cmin = lmin;
 	return lmin;
@@ -311,9 +336,24 @@ float lmax  = MIN_FLOAT_VALUE;
 
 	for (int i=0; i<count; i++) {
 		lmax  = max (lmax , arg[i]);		
+		if (arg[i]>lmax) imax = i;		
 	}
 	cmax = lmax;
 	return lmax;
+}
+
+
+//Returns the calculated Max ID
+int SlidingArray::GetMaxID(void)
+{
+	return imax;
+}
+
+
+//Returns the calculated Min ID
+int SlidingArray::GetMinID(void)
+{
+	return imin;
 }
 
 

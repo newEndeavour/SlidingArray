@@ -1,7 +1,12 @@
 /*
-  SlidingArray.h v.01 - Library for 'duino
+  File:         SlidingArray.h
+  Version:      0.0.2
+  Date:         05-Jan-2019
+  Revision:     20-Jan-2019
+  Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
+
+  SlidingArray.h - Library for 'duino
   https://github.com/JeromeDrouin/SlidingArray
-  http://playground.arduino.cc/Main/SlidingArray
 
   Copyright (c) 2018 Jerome Drouin  All rights reserved.
 
@@ -17,6 +22,10 @@
  
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+  Editions:
+  - 0.0.1	: First version
+  - 0.0.2	: Addition of imin, imax members variables MinID and MaxID member methods
 
 */
 
@@ -62,6 +71,8 @@ class SlidingArray
 	float GetStdDeviation(void);
 	float GetMin(void);
 	float GetMax(void);
+	int   GetMaxID(void);
+	int   GetMinID(void);
 	float GetLastMin(void);
 	float GetLastMax(void);
 
@@ -77,6 +88,8 @@ class SlidingArray
 	float    average;	// current average. Calculated automatically after each Populate
 	float    cmin;		// current minimum. Calculated automatically after each Populate
 	float    cmax;		// current maximum. Calculated automatically after each Populate
+	int 	 imax;		// The array position of Max
+	int 	 imin;		// The array position of Min
 	float *	 arg;		// Array values
 	
   // methods
