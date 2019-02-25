@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.h
-  Version:      0.0.2
+  Version:      0.0.3
   Date:         05-Jan-2019
-  Revision:     20-Jan-2019
+  Revision:     25-Feb-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   SlidingArray.h - Library for 'duino
@@ -26,6 +26,7 @@
   Editions:
   - 0.0.1	: First version
   - 0.0.2	: Addition of imin, imax members variables MinID and MaxID member methods
+  - 0.0.3	: Addition of variance, stddeviation
 
 */
 
@@ -36,7 +37,10 @@
 
 #include "Arduino.h"
 
-// defines
+// DEFINES /////////////////////////////////////////////////////////////
+#define VER_SlidingArray	"0.0.3"		//
+#define REL_SlidingArray	"25Feb2019"	//
+
 #define MAX_ARRAY_SIZE 		10000
 #define MAX_FLOAT_VALUE 	0xFFFFFFFF
 #define MIN_FLOAT_VALUE 	-3.4028235E+38
@@ -65,16 +69,26 @@ class SlidingArray
 	bool  IsFull(void);
 	bool  HasArgs(void);
 
+	float GetSum_xi(void);
+	float GetSum_xi2(void);
+
+	float RecalcAverage(void);
+	float RecalcVariance(void);
+	float RecalcStdDeviation(void);
+	float RecalcMin(void);
+	float RecalcMax(void);
+
 	float GetAverage(void);
-	float GetLastAverage(void);
 	float GetVariance(void);
 	float GetStdDeviation(void);
 	float GetMin(void);
 	float GetMax(void);
+
 	int   GetMaxID(void);
 	int   GetMinID(void);
-	float GetLastMin(void);
-	float GetLastMax(void);
+
+	String GetVersion();
+	String GetReleaseDate();
 
   // library-accessible "private" interface
   //private:
@@ -84,8 +98,11 @@ class SlidingArray
 	int 	 error;
 	int      size;		// Size of Array
 	int      count;		// current Size of Array
-	float    sum;		// current sum or args for average. Calculated automatically after each Populate
+	float    sum_xi;	// current sum or args for average. Calculated automatically after each Populate
+	float    sum_xi2;	// current sum or args^2 for variance. Calculated automatically after each Populate
 	float    average;	// current average. Calculated automatically after each Populate
+	float    variance;	// current variance. Calculated automatically after each Populate
+	float    stddeviation;	// current stddeviation. Calculated automatically after each Populate
 	float    cmin;		// current minimum. Calculated automatically after each Populate
 	float    cmax;		// current maximum. Calculated automatically after each Populate
 	int 	 imax;		// The array position of Max

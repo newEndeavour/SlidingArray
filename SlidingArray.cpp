@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.cpp
-  Version:      0.0.2
+  Version:      0.0.3
   Date:         05-Jan-2019
-  Revision:     20-Jan-2019
+  Revision:     25-Feb-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   Editions:	Please go to SlidingArray.h for Edition Notes.
@@ -44,34 +44,10 @@ SlidingArray::SlidingArray(int _size)
 	size			= _size;		//
 	arg		        = (float*) malloc(_size * sizeof(float));
 
-	//DEBUG - Pardon the mess as we are tidying this place ...
-	/*
-	Serial.print("\nsize:");
-	Serial.print(_size);
-	Serial.print("\nsizeof(float):");
-	Serial.print(sizeof(float));
-	Serial.print("\nmem:");
-	Serial.print(_size * sizeof(float));
-	*/
-
   	if (arg == NULL) size = 0;
   	
 	ClearArray();					// clear the Args
 
-	//DEBUG - Pardon the mess as we are tidying this place ...
-	/*
-	Serial.print("\nsize:");
-	Serial.print(size);
-	Serial.print("\ncount:");
-	Serial.print(count);
-	Serial.print("\ncmin:");
-	Serial.print(cmin);
-	Serial.print("\ncmax:");
-	Serial.print(cmax);
-	Serial.print("\navg:");
-	Serial.print(average);
-	delay(2000);
-	*/
 }
 
 
@@ -83,6 +59,20 @@ SlidingArray::~SlidingArray()
 
 
 // Public Methods //////////////////////////////////////////////////////////////
+// Returns the Version
+String SlidingArray::GetVersion()
+{
+	return VER_SlidingArray;
+}
+
+
+//Returns the Last Version Date
+String SlidingArray::GetReleaseDate()
+{
+	return REL_SlidingArray;
+}
+
+
 //Clears Array contents
 void SlidingArray::ClearArray(void)
 {
@@ -91,13 +81,16 @@ void SlidingArray::ClearArray(void)
 	}
 
 	//reset pre-calc variables
-	sum 	= 0.0;
-	average = 0.0;
-	count 	= 0;
-	cmin	= NAN;
-	cmax	= NAN;
-	imin	= NAN;
-	imax	= NAN;
+	sum_xi 		= 0.0;
+	sum_xi2 	= 0.0;
+	average 	= 0.0;
+	variance 	= 0.0;
+	stddeviation 	= 0.0;
+	count 		= 0;
+	cmin		= NAN;
+	cmax		= NAN;
+	imin		= NAN;
+	imax		= NAN;
 }
 
 
@@ -139,8 +132,6 @@ SlidingArray temp(newcount);
 	
 	//Update stats
 		
-	
-	
 }
 
 
@@ -150,22 +141,34 @@ void SlidingArray::PopulateArray(float lastObservation)
 {
 	count++;					// Increment count
 	if (count>size) {				// 
-		sum = 0;
-		cmin = MAX_FLOAT_VALUE;			// Reset Min and Max
-		cmax = MIN_FLOAT_VALUE;			
+		sum_xi 	= 0;
+		sum_xi2 = 0;
+		cmin 	= MAX_FLOAT_VALUE;			// Reset Min and Max
+		cmax 	= MIN_FLOAT_VALUE;			
 		for (int i=0; i<size-1; i++) {		// for each arguments in array minus the last
-			arg[i] = arg[i+1];		// shift existing arguments one place
-			sum   += arg[i];		// update average
-			cmin = min(arg[i],cmin);	// update min
-			cmax = max(arg[i],cmax);	// update max
+			arg[i] 	 = arg[i+1];		// shift existing arguments one place
+			sum_xi  += arg[i];		// update average
+			sum_xi2 += arg[i]*arg[i];	// update variance
+			cmin 	 = min(arg[i],cmin);	// update min
+			cmax 	 = max(arg[i],cmax);	// update max
 		}
 	}
 
 	count	     = min(size, count);		// current count
 	arg[count-1] = lastObservation;			// Last observation takes the last place in the array
-	sum         += lastObservation;			// 	
-	average      = sum/count;			// finalise average
+	sum_xi      += lastObservation;			// 	
+	sum_xi2     += (lastObservation*lastObservation);// 	
+
+	average      = sum_xi/count;			// finalise average, variance, stddeviation
+	variance     = 0;
+	stddeviation = 0;
+	if (count>1) {
+		variance     = ((float)sum_xi2/(float)count - ((float)sum_xi*sum_xi/(float)(count*count))) * count/(count-1);
+		stddeviation = sqrt(variance);
+	}
 	
+	
+
 	if (count>1) {					// Not the first observation
 		if (lastObservation<cmin) {		// update cmin and imin
 			imin = count-1;		
@@ -225,8 +228,16 @@ int SlidingArray::PushArgument(int pos, float Observation)
 	} else if (pos>count) {
 		PopulateArray(Observation);
 	} else {
-		sum 		= sum - arg[pos-1] + Observation;
-		average	 	= sum / count;
+		sum_xi 		= sum_xi - arg[pos-1] + Observation;
+		sum_xi2 	= sum_xi2 - (arg[pos-1]*arg[pos-1]) + (Observation*Observation);
+
+		average	 	= sum_xi / count;
+		variance     	= 0;
+		stddeviation 	= 0;
+		if (count>1) {
+			variance	= (sum_xi2/count - pow(sum_xi/count,2)) * count/(count-1);
+			stddeviation	= sqrt(variance);
+		}
 
 		cmax		= GetMax();	
 		cmin 		= GetMin();
@@ -277,46 +288,63 @@ bool SlidingArray::HasArgs(void)
 
 
 //Calculates average from current Array 
-float SlidingArray::GetAverage(void)
+float SlidingArray::RecalcAverage(void)
 {
-float sum  = 0;
+	sum_xi  = 0;
 
 	for (int i=0; i<count; i++) {
-		sum  += arg[i];		
+		sum_xi  += arg[i];		
 	}
-	average = sum/count;
+	average = sum_xi/count;
 	return average;
 }
 
 
-//Calculates Variance from current Array and average
+//Returns Last Variance
 float SlidingArray::GetVariance(void)
 {
-float sum2 = 0;
+	return variance;
+}
+
+
+//Calculates Variance from current Array and average
+float SlidingArray::RecalcVariance(void)
+{
+	sum_xi2 = 0;
 
 	if (count<2) {
 		return NAN;
 	} else { 
 		for (int i=0; i<count; i++) {
-			sum2 += pow( arg[i] - average , 2 );		
+			sum_xi2 += pow( arg[i] - average , 2 );		
 		}
-		return sum2/(count-1);
+		variance = sum_xi2/(count-1);
+		return variance;
 	}
 }
 
-//Calculates Std Deviation from current Variance 
+
+//Returns Last StdDeviation
 float SlidingArray::GetStdDeviation(void)
+{
+	return stddeviation;
+}
+
+
+//Calculates Std Deviation from current Variance 
+float SlidingArray::RecalcStdDeviation(void)
 {
 	if (count<2) {
 		return NAN;
 	} else { 
-		return sqrt(GetVariance());
+		stddeviation = sqrt(RecalcVariance());
+		return stddeviation;
 	}
 }
 
 
 //Returns the calculated Min
-float SlidingArray::GetMin(void)
+float SlidingArray::RecalcMin(void)
 {
 float lmin  = MAX_FLOAT_VALUE;
 
@@ -330,7 +358,7 @@ float lmin  = MAX_FLOAT_VALUE;
 
 
 //Returns the calculated Max
-float SlidingArray::GetMax(void)
+float SlidingArray::RecalcMax(void)
 {
 float lmax  = MIN_FLOAT_VALUE;
 
@@ -357,21 +385,34 @@ int SlidingArray::GetMinID(void)
 }
 
 
+//Returns the latest calculated sum_xi
+float SlidingArray::GetSum_xi(void)
+{
+	return sum_xi;
+}
+
+//Returns the latest calculated sum_xi2
+float SlidingArray::GetSum_xi2(void)
+{
+	return sum_xi2;
+}
+
+
 //Returns the latest calculated average
-float SlidingArray::GetLastAverage(void)
+float SlidingArray::GetAverage(void)
 {
 	return average;
 }
 
 //Returns the latest calculated Min
-float SlidingArray::GetLastMin(void)
+float SlidingArray::GetMin(void)
 {
 	return cmin;
 }
 
 
 //Returns the latest calculated Max
-float SlidingArray::GetLastMax(void)
+float SlidingArray::GetMax(void)
 {
 	return cmax;
 }
