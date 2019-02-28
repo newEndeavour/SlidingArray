@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.cpp
-  Version:      0.0.3
+  Version:      0.0.4
   Date:         05-Jan-2019
-  Revision:     25-Feb-2019
+  Revision:     28-Feb-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   Editions:	Please go to SlidingArray.h for Edition Notes.
@@ -43,9 +43,10 @@ SlidingArray::SlidingArray(int _size)
 	//Set initial values	
 	size			= _size;		//
 	arg		        = (float*) malloc(_size * sizeof(float));
-
   	if (arg == NULL) size = 0;
   	
+	isMom			= 0;			//Empty: moments aren't available...
+
 	ClearArray();					// clear the Args
 
 }
@@ -91,6 +92,131 @@ void SlidingArray::ClearArray(void)
 	cmax		= NAN;
 	imin		= NAN;
 	imax		= NAN;
+	isMom		= 0;				//Empty: moments aren't available...
+}
+
+
+
+//Populates Array with additional data point and drops oldest entry
+void SlidingArray::AddArgument_NoMom(float last)
+{
+	count++;					// Increment count
+	if (count>size) {				// 
+		for (int i=0; i<size-1; i++) {		// for each arguments in array minus the last
+			arg[i] 	 = arg[i+1];		// shift existing arguments one place
+		}
+		count = size;				// count = min (count, size) as here, count > size
+	}
+	arg[count-1] = last;			// Last obs takes the last place in the array
+
+	//Moment flag = 0 -> desactivates GetMoment() methods
+	isMom		= 0;
+	
+}
+
+
+//Populates Array with additional data point and drops oldest entry
+//Method also calculates (on the fly):
+// - average, 
+// - variance, 
+// - stddeviation, 
+// - min and max 
+void SlidingArray::AddArgument(float last)
+{
+	count++;					// Increment count
+	if (count>size) {				// 
+		sum_xi 	= 0;
+		sum_xi2 = 0;
+		cmin 	= MAX_FLOAT_VALUE;			// Reset Min and Max
+		cmax 	= MIN_FLOAT_VALUE;			
+		for (int i=0; i<size-1; i++) {		// for each arguments in array minus the last
+			arg[i] 	 = arg[i+1];		// shift existing arguments one place
+			sum_xi  += arg[i];		// update average
+			sum_xi2 += arg[i]*arg[i];	// update variance
+			if (arg[i]<cmin) cmin = arg[i];	// update min
+			if (arg[i]>cmax) cmax = arg[i];	// update max
+		}
+		count = size;				// count = min (count, size) as here, count > size
+	}
+
+	arg[count-1] = last;				// Last obs takes the last place in the array
+	sum_xi      += last;				// xi	
+	sum_xi2     += (last*last);			// xi^2			
+
+	average      = sum_xi/count;			// finalise average, variance, stddeviation
+	variance     = 0;
+	stddeviation = 0;
+	
+	if (count>1) {
+		variance     = ((float)sum_xi2/(float)count - ((float)sum_xi*sum_xi/(float)(count*count))) * count/(count-1);
+		stddeviation = sqrt(variance);
+	}
+
+	if (count>1) {					// Not the first obs
+		if (last<cmin) {			// update cmin and imin
+			imin = count-1;		
+			cmin = last;
+		}
+	
+		if (last>cmax) {			// update cmax and imax	
+			imax = count-1;			
+			cmax = last;
+		}
+	} else { 					// first obs
+			imin = count-1;		
+			cmin = last;
+			imax = count-1;			
+			cmax = last;
+	}
+
+	//Moment flag = 0 AND not the first Add -> Recalc All moments
+	if (!isMom && count>1) {
+		RecalcAllMoments();
+	}
+		
+}
+
+
+//Pushes a single data point at position pos (pos e [1,N])
+//if pos>count, we call Add_ with the obs
+//if pos<=count, we simply replace the existing argument with the obs
+//Method also calculates average, min and max on the fly
+int SlidingArray::PushArgument(int pos, float obs)
+{
+	if (pos<1) {
+		error = -4;
+		return error;
+	} else if (pos>count) {
+		AddArgument(obs);
+	} else {
+		sum_xi 		= sum_xi - arg[pos-1] + obs;
+		sum_xi2 	= sum_xi2 - (arg[pos-1]*arg[pos-1]) + (obs*obs);
+
+		average	 	= sum_xi / count;
+		variance     	= 0;
+		stddeviation 	= 0;
+		if (count>1) {
+			variance     	= ((float)sum_xi2/(float)count - ((float)sum_xi*sum_xi/(float)(count*count))) * count/(count-1);
+			stddeviation	= sqrt(variance);
+		}
+
+		cmax		= GetMax();	
+		cmin 		= GetMin();
+
+		arg[pos-1] 	= obs;				//Update argument
+	}	
+}
+
+//Return the valueof argument at position pos (if valid pos e [1,N])
+float SlidingArray::PullArgument(int pos)
+{
+
+	if ((pos>count) || (pos<1)) {
+		error = -3;
+		return error; 
+	} else {
+		return 	arg[pos-1];
+	}	
 }
 
 
@@ -123,7 +249,7 @@ SlidingArray temp(newcount);
 	//Populate temp array
 	for (int i=low_pos; i<count-high_pos; i++) {		// for each arguments in array
 		//METHOD 1: object method approach
-		temp.PopulateArray(arg[i]);				// copy existing args
+		temp.AddArgument(arg[i]);				// copy existing args
 		
 		//METHOD 2: direct argument approach
 		//temp.arg[j] = arg[i];
@@ -135,163 +261,10 @@ SlidingArray temp(newcount);
 }
 
 
-//Populates Array with additional data point and drops oldest entry
-//Method also calculates average, min and max on the fly
-void SlidingArray::PopulateArray(float lastObservation)
-{
-	count++;					// Increment count
-	if (count>size) {				// 
-		sum_xi 	= 0;
-		sum_xi2 = 0;
-		cmin 	= MAX_FLOAT_VALUE;			// Reset Min and Max
-		cmax 	= MIN_FLOAT_VALUE;			
-		for (int i=0; i<size-1; i++) {		// for each arguments in array minus the last
-			arg[i] 	 = arg[i+1];		// shift existing arguments one place
-			sum_xi  += arg[i];		// update average
-			sum_xi2 += arg[i]*arg[i];	// update variance
-			cmin 	 = min(arg[i],cmin);	// update min
-			cmax 	 = max(arg[i],cmax);	// update max
-		}
-	}
-
-	count	     = min(size, count);		// current count
-	arg[count-1] = lastObservation;			// Last observation takes the last place in the array
-	sum_xi      += lastObservation;			// 	
-	sum_xi2     += (lastObservation*lastObservation);// 	
-
-	average      = sum_xi/count;			// finalise average, variance, stddeviation
-	variance     = 0;
-	stddeviation = 0;
-	if (count>1) {
-		variance     = ((float)sum_xi2/(float)count - ((float)sum_xi*sum_xi/(float)(count*count))) * count/(count-1);
-		stddeviation = sqrt(variance);
-	}
-	
-	
-
-	if (count>1) {					// Not the first observation
-		if (lastObservation<cmin) {		// update cmin and imin
-			imin = count-1;		
-			cmin = lastObservation;
-		}
-	
-		if (lastObservation>cmax) {		// update cmax and imax	
-			imax = count-1;			
-			cmax = lastObservation;
-		}
-	} else { 					// first observation
-			imin = count-1;		
-			cmin = lastObservation;
-			imax = count-1;			
-			cmax = lastObservation;
-	}
-
-	/*
-	//DEBUG - Pardon the mess as we are tidying this place ...
-	Serial.print("\n\ncount:");
-	Serial.print(count);
-	Serial.print("\nsize:");
-	Serial.print(size);
-	Serial.print("\nlobs:");
-	Serial.print(lastObservation,6);
-	Serial.print("\n");
-
-	for (int i=0; i<count; i++) {
-		Serial.print("arg[");
-		Serial.print(i);
-		Serial.print("]:");
-		Serial.print(arg[i],6);
-		Serial.print("\t");
-	}
-	Serial.print("\ncmin:");
-	Serial.print(cmin,6);
-	Serial.print("\ncmax:");
-	Serial.print(cmax,6);
-	Serial.print("\navg:");
-	Serial.print(average,6);
-	Serial.print("\n");
-	delay(1000);
-	*/
-	
-}
-
-
-//Pushes a single data point at position pos (pos e [1,N])
-//if pos>count, we call PopulateArray with the Observation
-//if pos<=count, we simply replace the existing argument with the Observation
-//Method also calculates average, min and max on the fly
-int SlidingArray::PushArgument(int pos, float Observation)
-{
-	if (pos<1) {
-		error = -4;
-		return error;
-	} else if (pos>count) {
-		PopulateArray(Observation);
-	} else {
-		sum_xi 		= sum_xi - arg[pos-1] + Observation;
-		sum_xi2 	= sum_xi2 - (arg[pos-1]*arg[pos-1]) + (Observation*Observation);
-
-		average	 	= sum_xi / count;
-		variance     	= 0;
-		stddeviation 	= 0;
-		if (count>1) {
-			variance	= (sum_xi2/count - pow(sum_xi/count,2)) * count/(count-1);
-			stddeviation	= sqrt(variance);
-		}
-
-		cmax		= GetMax();	
-		cmin 		= GetMin();
-
-		arg[pos-1] 	= Observation;				//Update argument
-	}	
-}
-
-//Return the valueof argument at position pos (if valid pos e [1,N])
-float SlidingArray::PullArgument(int pos)
-{
-
-	if ((pos>count) || (pos<1)) {
-		error = -3;
-		return error; 
-	} else {
-		return 	arg[pos-1];
-	}	
-}
-
-
-//Returns Size
-int SlidingArray::GetSize(void)
-{
-	return size;
-}
-
-
-//Returns Count
-int SlidingArray::GetCount(void)
-{
-	return count;
-}
-
-
-//Returns if Array is Full (Size==Count)
-bool SlidingArray::IsFull(void)
-{
-	return size==count;
-}
-
-
-//Returns if Array Has Arguments (Count!=0)
-bool SlidingArray::HasArgs(void)
-{
-	return count>0;
-}
-
-
 //Calculates average from current Array 
 float SlidingArray::RecalcAverage(void)
 {
 	sum_xi  = 0;
-
 	for (int i=0; i<count; i++) {
 		sum_xi  += arg[i];		
 	}
@@ -300,18 +273,10 @@ float SlidingArray::RecalcAverage(void)
 }
 
 
-//Returns Last Variance
-float SlidingArray::GetVariance(void)
-{
-	return variance;
-}
-
-
 //Calculates Variance from current Array and average
 float SlidingArray::RecalcVariance(void)
 {
 	sum_xi2 = 0;
-
 	if (count<2) {
 		return NAN;
 	} else { 
@@ -321,13 +286,6 @@ float SlidingArray::RecalcVariance(void)
 		variance = sum_xi2/(count-1);
 		return variance;
 	}
-}
-
-
-//Returns Last StdDeviation
-float SlidingArray::GetStdDeviation(void)
-{
-	return stddeviation;
 }
 
 
@@ -371,56 +329,158 @@ float lmax  = MIN_FLOAT_VALUE;
 }
 
 
-//Returns the calculated Max ID
-int SlidingArray::GetMaxID(void)
-{
-	return imax;
-}
-
-
-//Returns the calculated Min ID
-int SlidingArray::GetMinID(void)
-{
-	return imin;
-}
-
-
-//Returns the latest calculated sum_xi
-float SlidingArray::GetSum_xi(void)
-{
-	return sum_xi;
-}
-
-//Returns the latest calculated sum_xi2
-float SlidingArray::GetSum_xi2(void)
-{
-	return sum_xi2;
-}
-
-
 //Returns the latest calculated average
 float SlidingArray::GetAverage(void)
 {
-	return average;
+	if (isMom)
+		return average;
+	else 
+		return -1;
 }
+
+
+//Returns Last Variance
+float SlidingArray::GetVariance(void)
+{
+	if (isMom)
+		return variance;
+	else 
+		return -1;
+}
+
+
+//Returns Last StdDeviation
+float SlidingArray::GetStdDeviation(void)
+{
+	if (isMom)
+		return stddeviation;
+	else 
+		return -1;
+}
+
 
 //Returns the latest calculated Min
 float SlidingArray::GetMin(void)
 {
-	return cmin;
+	if (isMom)
+		return cmin;
+	else 
+		return -1;
 }
 
 
 //Returns the latest calculated Max
 float SlidingArray::GetMax(void)
 {
-	return cmax;
+	if (isMom)
+		return cmax;
+	else 
+		return -1;
 }
+
+
+//Returns the calculated Min ID
+int SlidingArray::GetMinID(void)
+{
+	if (isMom)
+		return imin;
+	else 
+		return -1;
+}
+
+
+//Returns the calculated Max ID
+int SlidingArray::GetMaxID(void)
+{
+	if (isMom)
+		return imax;
+	else 
+		return -1;
+}
+
+
+//Returns the latest calculated sum_xi
+float SlidingArray::GetSum_xi(void)
+{
+	if (isMom)
+		return sum_xi;
+	else 
+		return -1;
+}
+
+
+//Returns the latest calculated sum_xi2
+float SlidingArray::GetSum_xi2(void)
+{
+	if (isMom)
+		return sum_xi2;
+	else 
+		return -1;
+}
+
+
+//Returns Size
+int SlidingArray::GetSize(void)
+{
+	return size;
+}
+
+
+//Returns Count
+int SlidingArray::GetCount(void)
+{
+	return count;
+}
+
+
+//Returns if Array is Full (Size==Count)
+bool SlidingArray::IsFull(void)
+{
+	return size==count;
+}
+
+
+//Returns if Array Has Arguments (Count!=0)
+bool SlidingArray::HasArgs(void)
+{
+	return count>0;
+}
+
+
 
 
 
 // Private Methods /////////////////////////////////////////////////////////////
 // Functions only available to other functions in this library
+
+//Recalculates All Moments and updates isMoM to =1
+void SlidingArray::RecalcAllMoments(void) 
+{
+	cmin  = MAX_FLOAT_VALUE;
+	cmax  = MIN_FLOAT_VALUE;
+
+	sum_xi 	= 0;
+	sum_xi2 = 0;
+
+	for (int i=0; i<count; i++) {
+		sum_xi  += arg[i];				// Average
+		sum_xi2 += pow( arg[i] - average , 2 );		// Variance
+		cmin  = min (cmin , arg[i]);			// Min
+		if (arg[i]<cmin) imin = i;			// imin
+		cmax  = max (cmax , arg[i]);			// Max	
+		if (arg[i]>cmax) imax = i;			// imax
+	}
+
+	//update moments & statistics
+	average	 	= sum_xi / count;
+	variance 	= sum_xi2/(count-1);
+	stddeviation 	= sqrt(RecalcVariance());
+
+	//Moment flag = 1
+	isMom 		= 1;
+	
+}
+
 
 
 // /////////////////////////////////////////////////////////////////////////////

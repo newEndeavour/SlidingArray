@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray1
-  Version:      0.0.1
+  Version:      0.0.4
   Date:         19-Dec-2018
-  Revision:     07-Jan-2019
+  Revision:     28-Feb-2019
   Author:       Jerome Drouin
 
   https://github.com/newEndeavour/SlidingArray1
@@ -44,11 +44,11 @@ void setup() {
   for (int i=0;i<10;i++) {
     //Observation        = (1.0) * random(0,100)/100;    
     Observation        = i;    
-    SlidingArray1.PopulateArray(Observation);
-    ControlArray2.PopulateArray(SlidingArray1.GetSum_xi());
-    ControlArray3.PopulateArray(SlidingArray1.GetSum_xi2());
-    ControlArray4.PopulateArray(SlidingArray1.GetVariance());
-    ControlArray5.PopulateArray(SlidingArray1.GetStdDeviation());
+    SlidingArray1.AddArgument(Observation);
+    ControlArray2.AddArgument(SlidingArray1.GetSum_xi());
+    ControlArray3.AddArgument(SlidingArray1.GetSum_xi2());
+    ControlArray4.AddArgument(SlidingArray1.GetVariance());
+    ControlArray5.AddArgument(SlidingArray1.GetStdDeviation());
   }
 
   //Statistics  
@@ -72,11 +72,11 @@ void setup() {
 
   Serial.print("\n\nStatistics:");
   Serial.print("\nAverage:");
-  Serial.print(SlidingArray1.RecalcAverage(),5);
+  Serial.print(SlidingArray1.GetAverage(),5);
   Serial.print("\nVariance:");
-  Serial.print(SlidingArray1.RecalcVariance(),5);
+  Serial.print(SlidingArray1.GetVariance(),5);
   Serial.print("\nStdDeviation:");
-  Serial.print(SlidingArray1.RecalcStdDeviation(),5);
+  Serial.print(SlidingArray1.GetStdDeviation(),5);
   Serial.print("\nMin:");
   Serial.print(SlidingArray1.GetMin(),5);
   Serial.print("\nMax:");
@@ -135,8 +135,8 @@ void loop() {
   
   Observation        = random(0,100);    
 
-  //Running Average
-  SlidingArray1.PopulateArray(Observation);
+  //Sliding Array Fast Add
+  SlidingArray1.AddArgument_NoMom(Observation);
 
   //Statistics  
   Serial.print("\n\n");
@@ -144,12 +144,17 @@ void loop() {
   Serial.print(")");
 
   Serial.print("\tAvg:");
-  Serial.print(SlidingArray1.GetAverage(),5);
+  Serial.print(SlidingArray1.RecalcAverage(),5);
+  Serial.print("\tVar:");
+  Serial.print(SlidingArray1.RecalcVariance(),5);
+  Serial.print("\tStddev:");
+  Serial.print(SlidingArray1.RecalcStdDeviation(),5);
   Serial.print("\tMin:");
-  Serial.print(SlidingArray1.GetMin(),5);
+  Serial.print(SlidingArray1.RecalcMin(),5);
   Serial.print("\tMax:");
-  Serial.print(SlidingArray1.GetMax(),5);
+  Serial.print(SlidingArray1.RecalcMax(),5);
+  Serial.print("\n");
 
-  delay(500);
+  delay(1000);
   
 }
