@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray1
-  Version:      0.0.4
+  Version:      0.0.5
   Date:         19-Dec-2018
-  Revision:     28-Feb-2019
+  Revision:     05-Mar-2019
   Author:       Jerome Drouin
 
   https://github.com/newEndeavour/SlidingArray1
@@ -44,11 +44,11 @@ void setup() {
   for (int i=0;i<10;i++) {
     //Observation        = (1.0) * random(0,100)/100;    
     Observation        = i;    
-    SlidingArray1.AddArgument(Observation);
-    ControlArray2.AddArgument(SlidingArray1.GetSum_xi());
-    ControlArray3.AddArgument(SlidingArray1.GetSum_xi2());
-    ControlArray4.AddArgument(SlidingArray1.GetVariance());
-    ControlArray5.AddArgument(SlidingArray1.GetStdDeviation());
+    SlidingArray1.Add(Observation);
+    ControlArray2.Add(SlidingArray1.GetSum_xi());
+    ControlArray3.Add(SlidingArray1.GetSum_xi2());
+    ControlArray4.Add(SlidingArray1.GetVariance());
+    ControlArray5.Add(SlidingArray1.GetStdDeviation());
   }
 
   //Statistics  
@@ -136,7 +136,7 @@ void loop() {
   Observation        = random(0,100);    
 
   //Sliding Array Fast Add
-  SlidingArray1.AddArgument_NoMom(Observation);
+  SlidingArray1.Add_Fast(Observation);
 
   //Statistics  
   Serial.print("\n\n");

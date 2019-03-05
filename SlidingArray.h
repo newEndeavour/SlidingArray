@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.h
-  Version:      0.0.4
+  Version:      0.0.5
   Date:         05-Jan-2019
-  Revision:     28-Feb-2019
+  Revision:     05-Mar-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   SlidingArray.h - Library for 'duino
@@ -29,12 +29,14 @@
 		  member methods
   - 0.0.3	: Addition of variance, stddeviation
   - 0.0.4	: Renaming PopulateArray into AddArgument
-		  Adding a Slow (AddArgument) and a Fast (AddArgument_NoMom) mode to the 
-		  AddArgument method to deal with speed.
-		  - AddArgument_NoMom only adds data the the sliding array: statistics can be 
+		  Adding a Slow (Add) and a Fast (Add_NoMom) mode to the 
+		  Add method to deal with speed.
+		  - Add_NoMom only adds data the the sliding array: statistics can be 
 		  recalculated later via the Get methods.
-		  - AddArgument adds data and calculates min, max, mean, variance & 
+		  - Add adds data and calculates min, max, mean, variance & 
 	          stddeviation on the fly.
+  - 0.0.5	: Renaming AddArgument, AddArgument_NoMom into Add and Add_Fast
+		  Renaming ClearArray into Flush
 
 */
 
@@ -46,8 +48,8 @@
 #include "Arduino.h"
 
 // DEFINES /////////////////////////////////////////////////////////////
-#define VER_SlidingArray	"0.0.4"		//
-#define REL_SlidingArray	"28Feb2019"	//
+#define VER_SlidingArray	"0.0.5"		//
+#define REL_SlidingArray	"05Mar2019"	//
 
 #define MAX_ARRAY_SIZE 		10000
 #define MAX_FLOAT_VALUE 	0xFFFFFFFF
@@ -64,13 +66,13 @@ class SlidingArray
 	explicit SlidingArray(int _arraySize);
 	~SlidingArray();
 
-	void  ClearArray();
-	void  SortArray(int operation);
-	void  TrimArray(int low_pos, int high_pos);
+	void  Flush();
+	void  Sort(int operation);
+	void  Trim(int low_pos, int high_pos);
 
-	void  AddArgument_NoMom(float Obs);		// Fast version of AddArgument with No Moments calculated
-	void  AddArgument(float Obs);			// Slower version of AddArgument with standard moments cacl'ed on the fly.
-							// if control=1, this method recalculates all moments
+	void  Add_Fast(float Obs);		// Fast version of Add with No Moments calculated
+	void  Add(float Obs);			// Slower version of Add with standard moments cacl'ed on the fly.
+						// if control=1, this method recalculates all moments
 
 	int   PushArgument(int pos, float Obs);
 	float PullArgument(int pos);
@@ -108,8 +110,8 @@ class SlidingArray
   protected:
   // variables
 	int 	 error;
-	int	 isMom;		// Control parameter for AddArgument_NoMom call. =0 after NoMom called. =1 after 
-				// AddArgument called. GetAverage(), GetVariance, GetStdDeviation() are unavailable when 
+	int	 isMom;		// Control parameter for Add_NoMom call. =0 after NoMom called. =1 after 
+				// Add called. GetAverage(), GetVariance, GetStdDeviation() are unavailable when 
 				// isMom is not equal to 1
 
 	int      size;		// Size of Array

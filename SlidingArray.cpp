@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.cpp
-  Version:      0.0.4
+  Version:      0.0.5
   Date:         05-Jan-2019
-  Revision:     28-Feb-2019
+  Revision:     05-Mar-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   Editions:	Please go to SlidingArray.h for Edition Notes.
@@ -47,7 +47,7 @@ SlidingArray::SlidingArray(int _size)
   	
 	isMom			= 0;			//Empty: moments aren't available...
 
-	ClearArray();					// clear the Args
+	Flush();					// clear the Args
 
 }
 
@@ -75,7 +75,7 @@ String SlidingArray::GetReleaseDate()
 
 
 //Clears Array contents
-void SlidingArray::ClearArray(void)
+void SlidingArray::Flush(void)
 {
 	for (int i=0; i<size; i++) {
 		arg[i] = 0.0;		
@@ -98,7 +98,7 @@ void SlidingArray::ClearArray(void)
 
 
 //Populates Array with additional data point and drops oldest entry
-void SlidingArray::AddArgument_NoMom(float last)
+void SlidingArray::Add_Fast(float last)
 {
 	count++;					// Increment count
 	if (count>size) {				// 
@@ -121,7 +121,7 @@ void SlidingArray::AddArgument_NoMom(float last)
 // - variance, 
 // - stddeviation, 
 // - min and max 
-void SlidingArray::AddArgument(float last)
+void SlidingArray::Add(float last)
 {
 	count++;					// Increment count
 	if (count>size) {				// 
@@ -187,7 +187,7 @@ int SlidingArray::PushArgument(int pos, float obs)
 		error = -4;
 		return error;
 	} else if (pos>count) {
-		AddArgument(obs);
+		Add(obs);
 	} else {
 		sum_xi 		= sum_xi - arg[pos-1] + obs;
 		sum_xi2 	= sum_xi2 - (arg[pos-1]*arg[pos-1]) + (obs*obs);
@@ -226,7 +226,7 @@ float SlidingArray::PullArgument(int pos)
 //*******************************************************************************
 //Sorts Array, in an Ascending order = [1,2,3,4, ... ,Count] (Operation = 0) 
 // or a Descending order = [Count, ... ,4,3,2,1] (Operation = 1)
-void  SlidingArray::SortArray(int operation)
+void  SlidingArray::Sort(int operation)
 {
 	
 
@@ -238,7 +238,7 @@ void  SlidingArray::SortArray(int operation)
 //
 //*******************************************************************************
 //Trim Array with low_pos args, and high_pos args leaving only middle section
-void  SlidingArray::TrimArray(int low_pos, int high_pos)
+void  SlidingArray::Trim(int low_pos, int high_pos)
 {
 int newcount = count - low_pos - high_pos;
 SlidingArray temp(newcount);
@@ -249,7 +249,7 @@ SlidingArray temp(newcount);
 	//Populate temp array
 	for (int i=low_pos; i<count-high_pos; i++) {		// for each arguments in array
 		//METHOD 1: object method approach
-		temp.AddArgument(arg[i]);				// copy existing args
+		temp.Add(arg[i]);				// copy existing args
 		
 		//METHOD 2: direct argument approach
 		//temp.arg[j] = arg[i];
