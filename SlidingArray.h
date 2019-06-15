@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.h
-  Version:      0.0.5
+  Version:      0.0.6
   Date:         05-Jan-2019
-  Revision:     05-Mar-2019
+  Revision:     15-Jun-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   SlidingArray.h - Library for 'duino
@@ -37,6 +37,8 @@
 	          stddeviation on the fly.
   - 0.0.5	: Renaming AddArgument, AddArgument_NoMom into Add and Add_Fast
 		  Renaming ClearArray into Flush
+  - 0.0.6	: Introducing NOTAVAIL
+		
 
 */
 
@@ -48,9 +50,10 @@
 #include "Arduino.h"
 
 // DEFINES /////////////////////////////////////////////////////////////
-#define VER_SlidingArray	"0.0.5"		//
-#define REL_SlidingArray	"05Mar2019"	//
+#define VER_SlidingArray	"0.0.6"		//
+#define REL_SlidingArray	"15Jun2019"	//
 
+#define NOTAVAIL 		-9999
 #define MAX_ARRAY_SIZE 		10000
 #define MAX_FLOAT_VALUE 	0xFFFFFFFF
 #define MIN_FLOAT_VALUE 	-3.4028235E+38
@@ -76,6 +79,7 @@ class SlidingArray
 
 	int   PushArgument(int pos, float Obs);
 	float PullArgument(int pos);
+	float GetArgument(int pos);
 
 	int   GetSize(void);
 	int   GetCount(void);

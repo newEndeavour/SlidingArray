@@ -1,8 +1,8 @@
 /*
   File:         SlidingArray.cpp
-  Version:      0.0.5
+  Version:      0.0.6
   Date:         05-Jan-2019
-  Revision:     05-Mar-2019
+  Revision:     15-Jun-2019
   Author:       Jerome Drouin (jerome.p.drouin@gmail.com)
 
   Editions:	Please go to SlidingArray.h for Edition Notes.
@@ -88,10 +88,10 @@ void SlidingArray::Flush(void)
 	variance 	= 0.0;
 	stddeviation 	= 0.0;
 	count 		= 0;
-	cmin		= NAN;
-	cmax		= NAN;
-	imin		= NAN;
-	imax		= NAN;
+	cmin		= NOTAVAIL;
+	cmax		= NOTAVAIL;
+	imin		= NOTAVAIL;
+	imax		= NOTAVAIL;
 	isMom		= 0;				//Empty: moments aren't available...
 }
 
@@ -173,6 +173,9 @@ void SlidingArray::Add(float last)
 	if (!isMom && count>1) {
 		RecalcAllMoments();
 	}
+	//Moment flag = 1, in case Count=1.
+	isMom = 1;
+	
 		
 }
 
@@ -207,16 +210,27 @@ int SlidingArray::PushArgument(int pos, float obs)
 	}	
 }
 
-//Return the valueof argument at position pos (if valid pos e [1,N])
+//Return the value of argument at position pos (if valid pos e [1,N])
 float SlidingArray::PullArgument(int pos)
 {
 
-	if ((pos>count) || (pos<1)) {
+	if (pos>count) {
 		error = -3;
+		return error; 
+	} else if (pos<1) {
+		error = -4;
 		return error; 
 	} else {
 		return 	arg[pos-1];
 	}	
+}
+
+
+//Return the value of argument at position pos (if valid pos e [1,N])
+float SlidingArray::GetArgument(int pos)
+{
+
+	return PullArgument(pos);
 }
 
 
@@ -278,7 +292,7 @@ float SlidingArray::RecalcVariance(void)
 {
 	sum_xi2 = 0;
 	if (count<2) {
-		return NAN;
+		return NOTAVAIL;
 	} else { 
 		for (int i=0; i<count; i++) {
 			sum_xi2 += pow( arg[i] - average , 2 );		
@@ -293,7 +307,7 @@ float SlidingArray::RecalcVariance(void)
 float SlidingArray::RecalcStdDeviation(void)
 {
 	if (count<2) {
-		return NAN;
+		return NOTAVAIL;
 	} else { 
 		stddeviation = sqrt(RecalcVariance());
 		return stddeviation;
